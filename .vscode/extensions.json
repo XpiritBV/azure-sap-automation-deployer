@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "editorconfig.editorconfig",
+    "github.vscode-github-actions",
+    "ms-azuretools.vscode-docker",
+    "ms-vscode-remote.remote-containers",
+    "bierner.markdown-preview-github-styles",
+    "bierner.markdown-mermaid"
+  ]
+}
