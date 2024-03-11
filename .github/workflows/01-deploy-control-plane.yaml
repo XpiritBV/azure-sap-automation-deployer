@@ -1,0 +1,243 @@
+# /*---------------------------------------------------------------------------8
+# |                                                                            |
+# |         This pipeline deploys the control plane in GitHub Actions          |
+# |                                                                            |
+# +------------------------------------4--------------------------------------*/
+
+name: Deploy Control Plane
+run-name: Deploy Control Plane by @${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployer:
+        description: "Deployer configuration name, use the following syntax: ENV-LOCA-VNET-INFRASTRUCTURE"
+        required: true
+        type: environment
+      library:
+        default: MGMT-NOEU-SAP_LIBRARY
+        description: "SAP Library configuration name, use the`` following syntax: ENV-LOCA-SAP_LIBRARY"
+        type: choice
+        options:
+        - MGMT-NOEU-SAP_LIBRARY
+      # environment:
+      #   default: MGMT
+      #   description: Environment name
+      #   type: choice
+      #   options:
+      #   - MGMT
+      #   - DEV
+      #   - QA
+      #   - PROD
+      use_webapp:
+        default: true
+        description: Deploy the configuration web application infrastructure
+        type: boolean
+      # deploy_webapp_software:
+      #   default: true
+      #   description: "Deploy the configuration web application software"
+      #   type: boolean
+      # force_reset:
+      #   default: false
+      #   description: Force a re-install - may require multiple re-runs
+      #   type: boolean
+
+permissions:
+  contents: write
+  id-token: write
+  issues: write
+
+jobs:
+  setup_deployer:
+    name: Prepare the self hosted runners(s)
+    environment: ${{ inputs.deployer }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/xpiritbv/azure-sap-automation:github-workflow
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      # Required permissions: org level runner registration permissions
+      - name: Get app token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ secrets.APPLICATION_ID }}
+          application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
+          organization: ${{ github.repository_owner }}
+
+      - name: 'Set log level'
+        id: log_level
+        run: |
+          #!/usr/bin/env bash
+          log_level=WARN
+
+          if [ "${{ secrets.ACTIONS_RUNNER_DEBUG }}" == "true" ] || [ "${{ env.ACTIONS_RUNNER_DEBUG }}" == "true" ]; then
+            $log_level=DEBUG
+          fi
+
+          echo "log_level=$log_level" >> $GITHUB_OUTPUT
+
+      - name: Setup deployer
+        run: |
+          echo '${{ toJSON(github) }}' > /tmp/github_context.json
+          deploy/automation/01-deploy-control-plane/01-setup-deployer.sh
+        working-directory: /source
+        env:
+          # TODO: connection_name: ${{ inputs.connection_name }}
+          APP_REGISTRATION_APP_ID: ${{ secrets.APP_REGISTRATION_APP_ID }}
+          APP_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          CONFIG_REPO_PATH: ${{ github.workspace }}/cfg
+          TF_LOG: ${{ steps.log_level.outputs.log_level }}
+          TF_VAR_ansible_core_version: 2.15 # TODO: Need to be stored in App Configurations
+          WEB_APP_CLIENT_SECRET: ${{ secrets.WEB_APP_CLIENT_SECRET }}
+          deployerconfig: ${{ inputs.deployer }}.tfvars
+          deployerfolder: ${{ inputs.deployer }}
+          force_reset: ${{ inputs.force_reset }}
+          libraryconfig: ${{ inputs.library }}.tfvars
+          libraryfolder: ${{ inputs.library }}
+          log: logfile_${{ github.run_number }}-${{ github.run_attempt }}
+          tf_version: 1.6.2 # Latest version is already installed in the hosted agent
+          use_webapp: ${{ inputs.use_webapp }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 'setup-deployer-logs-${{ github.run_number }}-${{ github.run_attempt }}'
+          path: ${{ github.workspace }}/cfg/.sap_deployment_automation/terraform.log
+
+  deploy_controlplane:
+    name: Deploy the control plane
+    environment: ${{ inputs.deployer }}
+    needs: setup_deployer
+    runs-on: self-hosted
+    container:
+      image: ghcr.io/xpiritbv/azure-sap-automation:github-workflow
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      # Required permissions: org level runner registration permissions
+      - name: Get app token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ secrets.APPLICATION_ID }}
+          application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
+          organization: ${{ github.repository_owner }}
+
+      - name: Azure Login
+        uses: Azure/Login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Deploy control plane
+        run: |
+          echo '${{ toJSON(github) }}' > /tmp/github_context.json
+          deploy/automation/01-deploy-control-plane/02-deploy-control-plane.sh
+        working-directory: /source
+        env:
+          APP_REGISTRATION_APP_ID: ${{ secrets.APP_REGISTRATION_APP_ID }}
+          APP_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+          CONFIG_REPO_PATH: ${{ github.workspace }}/cfg
+          CP_ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          CP_ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          CP_ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          CP_ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          TF_LOG: ${{ steps.log_level.outputs.log_level }}
+          WEB_APP_CLIENT_SECRET: ${{ secrets.WEB_APP_CLIENT_SECRET }}
+          deployerconfig: ${{ inputs.deployer }}.tfvars
+          deployerfolder: ${{ inputs.deployer }}
+          libraryconfig: ${{ inputs.library }}.tfvars
+          libraryfolder: ${{ inputs.library }}
+          use_webapp: ${{ inputs.use_webapp }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 'deploy-controlplane-logs-${{ github.run_number }}-${{ github.run_attempt }}'
+          path: ${{ github.workspace }}/cfg/.sap_deployment_automation/terraform.log
+
+  web_app_deployment:
+    if: ${{ inputs.use_webapp }} && ${{ inputs.deploy_webapp_software }}
+    name: Deploy SAP configuration Web App
+    environment: ${{ inputs.deployer }}
+    needs: deploy_controlplane
+    runs-on: self-hosted
+    container:
+      image: ghcr.io/xpiritbv/azure-sap-automation:github-workflow
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: Azure/Login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Build the Configuration Web Application
+        run: dotnet build Webapp/SDAF/*.csproj
+
+      - name: Publish the Configuration Web Application
+        run: |
+          dotnet publish Webapp/**/*.csproj \
+            --configuration Release \
+            --nologo \
+            --output WebApp
+
+      - name: Deploy the Configuration Web Application
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ vars.WEBAPP_URL_BASE }}
+          package: WebApp
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+
+      - name: Configure Web Application Authentication
+        run: |
+          echo "Configure the Web Application authentication using the following script." >> $GITHUB_STEP_SUMMARY
+          echo "  ```bash" >> $GITHUB_STEP_SUMMARY
+          echo "  az ad app update --id ${{ env.APP_REGISTRATION_APP_ID }} \" >> $GITHUB_STEP_SUMMARY
+          echo "    --web-home-page-url https://${{ env.WEBAPP_URL_BASE }}.azurewebsites.net \" >> $GITHUB_STEP_SUMMARY
+          echo "    --web-redirect-uris https://${{ env.WEBAPP_URL_BASE }}.azurewebsites.net/ https://${{ env.WEBAPP_URL_BASE }}.azurewebsites.net/.auth/login/aad/callback" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "  az role assignment create \" >> $GITHUB_STEP_SUMMARY
+          echo "    --assignee ${{ env.WEBAPP_IDENTITY }} \" >> $GITHUB_STEP_SUMMARY
+          echo "    --role reader \" >> $GITHUB_STEP_SUMMARY
+          echo "    --subscription ${{ env.ARM_SUBSCRIPTION_ID }} \" >> $GITHUB_STEP_SUMMARY
+          echo "    --scope /subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.APP_RESOURCE_GROUP }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "  az webapp restart \" >> $GITHUB_STEP_SUMMARY
+          echo "    --resource-group ${{ env.APP_RESOURCE_GROUP }} \" >> $GITHUB_STEP_SUMMARY
+          echo "    --name ${{ env.WEBAPP_URL_BASE }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "  echo \"[Access the Web App](https://${{ env.WEBAPP_URL_BASE }}.azurewebsites.net)\"" >> $GITHUB_STEP_SUMMARY
+          echo "  ```" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo $GITHUB_STEP_SUMMARY > "Web Application Configuration.md"
+        env:
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          SYSTEM_PIPELINE_ID: ${{ secrets.SYSTEM_PIPELINE_ID }}
+          APP_REGISTRATION_APP_ID: ${{ secrets.APP_REGISTRATION_APP_ID }}
+          WEBAPP_URL_BASE: ${{ vars.WEBAPP_URL_BASE }}
+          WEBAPP_IDENTITY: ${{ secrets.WEBAPP_IDENTITY }}
+          APP_RESOURCE_GROUP: ${{ vars.TERRAFORM_REMOTE_STORAGE_RESOURCE_GROUP_NAME }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 'web-application-configuration-${{ github.run_number }}-${{ github.run_attempt }}'
+          path: "Web Application Configuration.md"
+
+      - name: Create GitHub issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create setup-webapp -c 00FF00 -d "Label for issues related to the setup of the configuration web application"
+          gh issue create -t "Create GitHub WebApp" -F "Web Application Configuration.md" -l "setup-webapp"
