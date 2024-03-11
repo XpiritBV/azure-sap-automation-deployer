@@ -37,10 +37,10 @@ on:
       #   default: true
       #   description: "Deploy the configuration web application software"
       #   type: boolean
-      # force_reset:
-      #   default: false
-      #   description: Force a re-install - may require multiple re-runs
-      #   type: boolean
+      force_reset:
+        default: false
+        description: Force a re-install - may require multiple re-runs
+        type: boolean
 
 permissions:
   contents: write
