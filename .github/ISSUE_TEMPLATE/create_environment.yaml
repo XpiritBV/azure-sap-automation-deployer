@@ -1,0 +1,39 @@
+name: Create Environment
+description: Use this template to create a new environment.
+title: Create Environment
+labels:
+  - "create-environment"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        These steps will guide you through the process of creating a new environment. This will create a new environment for this repository to which you can connect your Azure subscription.
+
+        More information about the naming convention can be found [here](https://learn.microsoft.com/en-us/azure/sap/automation/naming).
+
+  - type: input
+    id: environment
+    attributes:
+      label: '​Environment​' # U+200B - Zero Width Space; to make sure the UI stays clean
+      description: 'The name of the environment you want to create. E.g. Dev, Test, Prod. Max five characters.'
+      placeholder: Dev
+    validations:
+      required: true
+
+  - type: input
+    id: region_map
+    attributes:
+      label: '​Region​' # U+200B - Zero Width Space; to make sure the UI stays clean
+      description: 'Azure region to deploy the environment to. Use the short name, e.g. `westeurope`.'
+      placeholder: westeurope
+    validations:
+      required: true
+
+  - type: input
+    id: vnet_name
+    attributes:
+      label: '​Deployer Vnet​' # U+200B - Zero Width Space; to make sure the UI stays clean
+      description: 'Virtual network in which the deployer should be deployed. Max 7 characters.'
+      placeholder: DEP01
+    validations:
+      required: true

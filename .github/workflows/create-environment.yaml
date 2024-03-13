@@ -1,0 +1,132 @@
+name: Create environment
+
+on:
+  issues:
+    types: [ opened ]
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: write
+  actions: write
+
+jobs:
+  opened:
+    name: Create environment
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/xpiritbv/azure-sap-automation:github-workflow
+    if: contains(github.event.issue.labels.*.name, 'create-environment')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get app token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ secrets.APPLICATION_ID }}
+          application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
+          organization: ${{ github.repository_owner }}
+
+      - name: 'Validate Azure Credentials'
+        run: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          function missing_secret {
+            azure_link_issue=$(gh issue list --json 'number' | jq '.[].number' -r | grep link-azure)
+            gh issue reopen ${azure_link_issue}
+            gh issue comment ${azure_link_issue} -m "To continue, we need to have Azure credentials set.\n\nPlease set them and try again."
+            exit 1
+          }
+
+          if [[ -z "${{ secrets.AZURE_CLIENT_ID }}" ]] \
+            || [[ -z "${{ secrets.AZURE_CLIENT_SECRET }}" ]] \
+            || [[ -z "${{ secrets.AZURE_TENANT_ID }}" ]] \
+            || [[ -z "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]]; then
+            missing_secret
+          fi
+
+          az login --service-principal \
+            --username ${{ secrets.AZURE_CLIENT_ID }} \
+            --password=${{ secrets.AZURE_CLIENT_SECRET }} \
+            --tenant ${{ secrets.AZURE_TENANT_ID }} \
+            --output none
+
+          if [ $? -ne 0 ]; then
+            missing_secret
+          fi
+
+          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+          if [ $? -ne 0 ]; then
+            missing_secret
+          fi
+
+      - name: Run Issue form parser
+        id: parse
+        uses: peter-murray/issue-forms-body-parser@v4
+        with:
+          issue_id: ${{ github.event.issue.number }}
+          separator: '###'
+          label_marker_start: '​' # U+200B - Zero Width Space; to make sure the UI stays clean
+          label_marker_end: '​' # U+200B
+
+      - name: 'Create GitHub Environment'
+        run: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          # json_input=$(echo "${{ steps.parse.outputs.payload }}"')
+          json_input='{"Environment":"ACC","Region":"westeurope","Deployer Vnet":"DEP01"}'
+
+          environment=$(echo ${json_input} | jq -r '."Environment"')
+          region=$(echo ${json_input} | jq -r '."Region"')
+          deployer_vnet=$(echo ${json_input} | jq -r '."Deployer Vnet"')
+
+          pushd /source/deploy/terraform/terraform-units/modules/sap_namegenerator
+          region_map=$(echo var.region_mapping.${region} | terraform console | tr -d '"')
+          popd
+
+          region_display_name=$(az account list-locations -o json| jq --arg REGION $region '.[] | select(.name==$REGION) | .displayName' -r)
+
+          echo region_map: $region_map
+          echo region_display_name: $region_display_name
+
+          deployer_name=${environment}-${region_map}-${deployer_vnet}-INFRASTRUCTURE
+          library_name=${environment}-${region_map}-SAP_LIBRARY
+
+          echo ${{ steps.get_workflow_token.outputs.token }} | gh auth login --with-token
+
+          url_to_call=/repos/${{ github.repository }}/environments/${environment}
+
+          _=$(gh api \
+            -X PUT \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            ${url_to_call})
+
+          mkdir -p ${GITHUB_WORKSPACE}/WORKSPACES/DEPLOYER/${deployer_name^^}
+          mkdir -p ${GITHUB_WORKSPACE}/WORKSPACES/LIBRARY/${library_name^^}
+
+          cat .cfg_template/deployer.tfvars \
+            | sed "s|@@ENV@@|${environment}|g" \
+            | sed "s|@@REGION@@|${region}|g" \
+            | sed "s|@@VNET@@|${deployer_vnet}|g" \
+            | sed "s|@@REGION_DISPLAY_NAME@@|${region_display_name}|g" \
+            > ${GITHUB_WORKSPACE}/WORKSPACES/DEPLOYER/${deployer_name^^}/${deployer_name^^}.tfvars
+
+          cat .cfg_template/library.tfvars \
+            | sed "s|@@ENV@@|${environment}|g" \
+            | sed "s|@@REGION@@|${region}|g" \
+            > ${GITHUB_WORKSPACE}/WORKSPACES/LIBRARY/${library_name^^}/${library_name^^}.tfvars
+
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          git add ${GITHUB_WORKSPACE}/WORKSPACES
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "sap-automation-deployer@noreply.github.com"
+          git commit -m "Add configuration for ${environment} in ${region}"
+          git push
