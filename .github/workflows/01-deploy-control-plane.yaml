@@ -92,7 +92,7 @@ jobs:
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          CONFIG_REPO_PATH: ${{ github.workspace }}/cfg
+          CONFIG_REPO_PATH: ${{ github.workspace }}/WORKSPACES
           TF_LOG: ${{ steps.log_level.outputs.log_level }}
           TF_VAR_ansible_core_version: 2.15 # TODO: Need to be stored in App Configurations
           WEB_APP_CLIENT_SECRET: ${{ secrets.WEB_APP_CLIENT_SECRET }}
@@ -108,7 +108,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: 'setup-deployer-logs-${{ github.run_number }}-${{ github.run_attempt }}'
-          path: ${{ github.workspace }}/cfg/.sap_deployment_automation/terraform.log
+          path: ${{ github.workspace }}/WORKSPACES/.sap_deployment_automation/terraform.log
 
   deploy_controlplane:
     name: Deploy the control plane
@@ -138,7 +138,7 @@ jobs:
         env:
           APP_REGISTRATION_APP_ID: ${{ secrets.APP_REGISTRATION_APP_ID }}
           APP_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
-          CONFIG_REPO_PATH: ${{ github.workspace }}/cfg
+          CONFIG_REPO_PATH: ${{ github.workspace }}/WORKSPACES
           CP_ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           CP_ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           CP_ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -154,7 +154,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: 'deploy-controlplane-logs-${{ github.run_number }}-${{ github.run_attempt }}'
-          path: ${{ github.workspace }}/cfg/.sap_deployment_automation/terraform.log
+          path: ${{ github.workspace }}/WORKSPACES/.sap_deployment_automation/terraform.log
 
   web_app_deployment:
     if: ${{ inputs.use_webapp }} && ${{ inputs.deploy_webapp_software }}
