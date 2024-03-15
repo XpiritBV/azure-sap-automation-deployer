@@ -1,0 +1,33 @@
+name: 'When issue closed'
+
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  link-azure:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.labels.*.name, 'setup-app')
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: "Check if secrets are set"
+        run: |
+          if [ -z "$APPLICATION_PRIVATE_KEY" ] || [ -z "$APPLICATION_ID"] ;  then
+            gh issue reopen ${{ github.event.issue.number }}
+            gh issue comment ${{ github.event.issue.number }} -m "To continue, we need to have both secrets names `APPLICATION_PRIVATE_KEY` or `APPLICATION_ID` to be set.\n\nPlease set them and try again."
+            exit 1
+          fi
+        env:
+          APPLICATION_PRIVATE_KEY: ${{ secrets.APPLICATION_PRIVATE_KEY }}
+          APPLICATION_ID: ${{ secrets.APPLICATION_ID }}
+
+      - name: Run the script
+        run: |
+          cat .github/workflows/link-azure.tpl | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" | \
+          gh issue create -t "Link Azure to GitHub" -F - -l link-azure

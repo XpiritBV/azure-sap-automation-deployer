@@ -20,5 +20,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh label create setup-app
+          gh label create link-azure
+          gh label create create-environment
+
           cat .github/workflows/init.tpl | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" | \
           gh issue create -t "Create GitHub App" -F - -l "setup-app"
