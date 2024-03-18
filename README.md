@@ -6,5 +6,4 @@ This repository is meant as a template to start setting up you Azure SAP Deploye
 
 # Configuration
 
-The configuration of the deployer and terraform variables should be stored in the [cfg](cfg/) folder.
-
+The configuration of the deployer and Terraform variables should be stored in the [WORKSPACES](WORKSPACES/) folder.
