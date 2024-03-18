@@ -101,7 +101,7 @@ jobs:
           deployer_name=${environment}-${region_map}-${deployer_vnet}-INFRASTRUCTURE
           library_name=${environment}-${region_map}-SAP_LIBRARY
 
-          url_to_call=/repos/${{ github.repository }}/environments/${environment}
+          url_to_call=/repos/${{ github.repository }}/environments/${deployer_name^^}
 
           _=$(gh api \
             -X PUT \
