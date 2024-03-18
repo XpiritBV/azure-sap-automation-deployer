@@ -31,3 +31,5 @@ jobs:
         run: |
           cat .github/workflows/link-azure.tpl | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" | \
           gh issue create -t "Link Azure to GitHub" -F - -l link-azure
+        env:
+          GH_TOKEN: ${{ github.token }}
