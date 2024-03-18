@@ -64,8 +64,7 @@ jobs:
       - name: Setup deployer
         run: |
           echo '${{ toJSON(github) }}' > /tmp/github_context.json
-          deploy/automation/01-deploy-control-plane/01-setup-deployer.sh
-        working-directory: /source
+          /source/deploy/automation/01-deploy-control-plane/01-setup-deployer.sh
         env:
           APP_REGISTRATION_APP_ID: ${{ secrets.APP_REGISTRATION_APP_ID }}
           APP_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
@@ -74,6 +73,7 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           CONFIG_REPO_PATH: ${{ github.workspace }}/WORKSPACES
+          SAP_AUTOMATION_REPO_PATH: /source
           WEB_APP_CLIENT_SECRET: ${{ secrets.WEB_APP_CLIENT_SECRET }}
           deployerconfig: ${{ inputs.deployer }}.tfvars
           deployerfolder: ${{ inputs.deployer }}
@@ -112,12 +112,12 @@ jobs:
       - name: Deploy control plane
         run: |
           echo '${{ toJSON(github) }}' > /tmp/github_context.json
-          deploy/automation/01-deploy-control-plane/02-deploy-control-plane.sh
-        working-directory: /source
+          /source/deploy/automation/01-deploy-control-plane/02-deploy-control-plane.sh
         env:
           APP_REGISTRATION_APP_ID: ${{ secrets.APP_REGISTRATION_APP_ID }}
           APP_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
           CONFIG_REPO_PATH: ${{ github.workspace }}/WORKSPACES
+          SAP_AUTOMATION_REPO_PATH: /source
           CP_ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           CP_ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           CP_ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
