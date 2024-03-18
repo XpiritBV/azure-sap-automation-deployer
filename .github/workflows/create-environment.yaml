@@ -18,9 +18,6 @@ jobs:
       image: ghcr.io/xpiritbv/azure-sap-automation:github-workflow
     if: contains(github.event.issue.labels.*.name, 'create-environment')
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Get app token
         id: get_workflow_token
         uses: peter-murray/workflow-application-token-action@v3
@@ -28,6 +25,11 @@ jobs:
           application_id: ${{ secrets.APPLICATION_ID }}
           application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
           organization: ${{ github.repository_owner }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.get_workflow_token.outputs.token }}
 
       - name: 'Validate Azure Credentials'
         run: |
@@ -129,4 +131,23 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "sap-automation-deployer@noreply.github.com"
           git commit -m "Add configuration for ${environment} in ${region}"
+          git push
+
+          # Now update the deployment workflow with the deployer and library
+
+          # Remove the current values
+          yq -i 'del(.on.workflow_dispatch.inputs.deployer.options)' .github/workflows/01-deploy-control-plane.yaml
+          yq -i 'del(.on.workflow_dispatch.inputs.library.options)' .github/workflows/01-deploy-control-plane.yaml
+
+          # Add the new values
+          for deployer in $(ls ${GITHUB_WORKSPACE}/WORKSPACES/DEPLOYER); do
+            yq -i '.on.workflow_dispatch.inputs.deployer.options += ["'${deployer}'"]' .github/workflows/01-deploy-control-plane.yaml
+          done
+
+          for library in $(ls ${GITHUB_WORKSPACE}/WORKSPACES/LIBRARY); do
+            yq -i '.on.workflow_dispatch.inputs.library.options += ["'${library}'"]' .github/workflows/01-deploy-control-plane.yaml
+          done
+
+          git add .github/workflows/01-deploy-control-plane.yaml
+          git commit -m "Add deployer and library for ${environment} in ${region}"
           git push

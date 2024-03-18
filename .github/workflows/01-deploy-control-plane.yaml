@@ -10,13 +10,18 @@ run-name: Deploy Control Plane by @${{ github.actor }}
 on:
   workflow_dispatch:
     inputs:
-      deployer:
-        description: "Deployer configuration name, use the following syntax: ENV-LOCA-VNET-INFRASTRUCTURE"
+      environment:
+        description: "Select the environment to deploy to"
         required: true
         type: environment
+      deployer:
+        description: "Select the deployer you created"
+        required: true
+        type: choice
+        options:
       library:
         default: MGMT-NOEU-SAP_LIBRARY
-        description: "SAP Library configuration name, use the following syntax: ENV-LOCA-SAP_LIBRARY"
+        description: "Select the SAP Library to deploy"
         type: choice
         options:
           - MGMT-NOEU-SAP_LIBRARY
