@@ -89,6 +89,10 @@ jobs:
             | sed "s|@@REGION@@|${region}|g" \
             > ${GITHUB_WORKSPACE}/WORKSPACES/LIBRARY/${library_name^^}/${library_name^^}.tfvars
 
+          # Update the environment in the issue-closed workflow
+          workspace=$(ls ${GITHUB_WORKSPACE}/WORKSPACES|tail -n 1)
+          yq -i '.jobs.link-azure.environment = "'${deployer_name^^}'"' .github/workflows/issue-closed.yaml
+
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           git add ${GITHUB_WORKSPACE}/WORKSPACES
           git config --global user.name "GitHub Actions"
