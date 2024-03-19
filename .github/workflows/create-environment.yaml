@@ -31,42 +31,6 @@ jobs:
         with:
           token: ${{ steps.get_workflow_token.outputs.token }}
 
-      - name: 'Validate Azure Credentials'
-        run: |
-          #!/usr/bin/env bash
-
-          set -euo pipefail
-
-          function missing_secret {
-            azure_link_issue=$(gh issue list --json 'number' | jq '.[].number' -r | grep link-azure)
-            gh issue reopen ${azure_link_issue}
-            gh issue comment ${azure_link_issue} -m "To continue, we need to have Azure credentials set.\n\nPlease set them and try again."
-            exit 1
-          }
-
-          if [[ -z "${{ secrets.AZURE_CLIENT_ID }}" ]] \
-            || [[ -z "${{ secrets.AZURE_CLIENT_SECRET }}" ]] \
-            || [[ -z "${{ secrets.AZURE_TENANT_ID }}" ]] \
-            || [[ -z "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]]; then
-            missing_secret
-          fi
-
-          az login --service-principal \
-            --username ${{ secrets.AZURE_CLIENT_ID }} \
-            --password=${{ secrets.AZURE_CLIENT_SECRET }} \
-            --tenant ${{ secrets.AZURE_TENANT_ID }} \
-            --output none
-
-          if [ $? -ne 0 ]; then
-            missing_secret
-          fi
-
-          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-          if [ $? -ne 0 ]; then
-            missing_secret
-          fi
-
       - name: Run Issue form parser
         id: parse
         uses: peter-murray/issue-forms-body-parser@v4
@@ -85,7 +49,6 @@ jobs:
           set -euo pipefail
 
           json_input='${{ steps.parse.outputs.payload }}'
-          # json_input='{"Environment":"ACC","Region":"westeurope","Deployer Vnet":"DEP01"}'
 
           environment=$(echo ${json_input} | jq -r '."Environment"')
           region=$(echo ${json_input} | jq -r '."Region"')
@@ -135,3 +98,11 @@ jobs:
 
           # Now update the deployment workflow with the deployer and library
           ${GITHUB_WORKSPACE}/.github/workflows/update-workflow-on-workspaces-changes.sh
+
+      - name: 'Close issue'
+        run: |
+          new_issue=$(cat .github/workflows/link-azure.tpl | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" | \
+          gh issue create -t "Link Azure to GitHub" -F - -l link-azure)
+
+          gh issue close ${{ github.event.issue.number }}
+          gh issue comment ${{ github.event.issue.number }} -m "Environment created. The only thing left is add the information required to connect to Azure.\n\nI created a [new issue for you to fill in the required information](${new_issue})."
