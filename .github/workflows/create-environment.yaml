@@ -105,6 +105,6 @@ jobs:
           gh issue create -t "Link Azure to GitHub" -F - -l link-azure)
 
           gh issue close ${{ github.event.issue.number }}
-          gh issue comment ${{ github.event.issue.number }} -m "Environment created. The only thing left is add the information required to connect to Azure.\n\nI created a [new issue for you to fill in the required information](${new_issue})."
+          gh issue comment ${{ github.event.issue.number }} --body "Environment created. The only thing left is add the information required to connect to Azure.\n\nI created a [new issue for you to fill in the required information](${new_issue})."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
