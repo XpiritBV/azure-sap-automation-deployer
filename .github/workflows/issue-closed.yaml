@@ -26,6 +26,7 @@ jobs:
         env:
           APPLICATION_PRIVATE_KEY: ${{ secrets.APPLICATION_PRIVATE_KEY }}
           APPLICATION_ID: ${{ secrets.APPLICATION_ID }}
+          GH_TOKEN: ${{ github.token }}
 
   link-azure:
     runs-on: ubuntu-latest
@@ -66,3 +67,5 @@ jobs:
         if [ $? -ne 0 ]; then
           missing_secret
         fi
+      env:
+        GH_TOKEN: ${{ github.token }}
