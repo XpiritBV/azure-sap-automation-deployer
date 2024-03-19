@@ -21,4 +21,4 @@ This app needs the following repository permissions only for **this** repository
 
   **Note**: If you don't have permissions in your organization, your organization administrator will receive a request to install the app.
 
-When this is done, just close this issue and the next step will be created.
+When this is done, you can close this issue and [create a new environment](https://github.com/@@REPO@@/issues/new?assignees=&labels=create-environment&projects=&template=create_environment.yaml&title=Create+Environment).
