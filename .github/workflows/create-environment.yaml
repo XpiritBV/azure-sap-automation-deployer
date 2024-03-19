@@ -97,11 +97,11 @@ jobs:
           git push
 
           # Now update the deployment workflow with the deployer and library
-          ${GITHUB_WORKSPACE}/.github/workflows/update-workflow-on-workspaces-changes.sh
+          ${GITHUB_WORKSPACE}/.github/workflows/scripts/update-workflow-on-workspaces-changes.sh
 
       - name: 'Close issue'
         run: |
-          new_issue=$(cat .github/workflows/link-azure.tpl | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" | \
+          new_issue=$(cat .github/workflows/templates/link-azure.tpl | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" | \
           gh issue create -t "Link Azure to GitHub" -F - -l link-azure)
 
           gh issue close ${{ github.event.issue.number }}

@@ -25,7 +25,7 @@ jobs:
 
           owner=$(echo ${{ github.repository }} | cut -d '/' -f 1)
 
-          cat .github/workflows/init.tpl \
+          cat .github/workflows/templates/init.tpl \
           | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" \
           | sed "s|@@OWNER@@|${owner}|g" \
           | gh issue create -t "Create GitHub App" -F - -l "setup-app"
