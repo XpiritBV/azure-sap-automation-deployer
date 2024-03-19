@@ -67,5 +67,26 @@ jobs:
         if [ $? -ne 0 ]; then
           missing_secret
         fi
+
+        # If both the client-id and client-secret for the web-app are set, let's test these credentials
+        if [[ -n "${{ secrets.APP_REGISTRATION_APP_ID }}" ]] \
+          && [[ -n "${{ secrets.WEB_APP_CLIENT_SECRET }}"]]; then
+
+            az login --service-principal \
+            --username ${{ secrets.APP_REGISTRATION_APP_ID }} \
+            --password=${{ secrets.WEB_APP_CLIENT_SECRET }} \
+            --tenant ${{ secrets.AZURE_TENANT_ID }} \
+            --output none
+
+            if [ $? -ne 0 ]; then
+              missing_secret
+            fi
+
+            az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+            if [ $? -ne 0 ]; then
+              missing_secret
+            fi
+        fi
       env:
         GH_TOKEN: ${{ github.token }}
