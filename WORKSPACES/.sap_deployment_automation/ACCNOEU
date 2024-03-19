@@ -1,0 +1,12 @@
+ARM_SUBSCRIPTION_ID=d6c8e3b6-467e-452e-97c9-49d9de9e37da
+keyvault=ACCNOEUORDER66user5DC
+sshsecret=ACC-NOEU-ORDER66-sshkey
+deployer_random_id=XcSrQw
+deployer_public_ip_address=52.169.71.121
+deployer_app_config_name=accnoeuapc5dc
+created_resource_group_name=ACC-NOEU-ORDER66-INFRASTRUCTURE
+subscription=d6c8e3b6-467e-452e-97c9-49d9de9e37da
+STATE_SUBSCRIPTION=d6c8e3b6-467e-452e-97c9-49d9de9e37da
+client_id=ef6134f6-3912-41f7-b684-63fe90ae4100
+tenant_id=c01abe72-ffef-4ecc-bda0-937975b49e6b
+step=3
