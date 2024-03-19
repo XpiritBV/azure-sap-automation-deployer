@@ -23,5 +23,9 @@ jobs:
           gh label create link-azure
           gh label create create-environment
 
-          cat .github/workflows/init.tpl | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" | \
-          gh issue create -t "Create GitHub App" -F - -l "setup-app"
+          owner=$(echo ${{ github.repository }} | cut -d '/' -f 1)
+
+          cat .github/workflows/init.tpl \
+          | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" \
+          | sed "s|@@OWNER@@|${owner}|g" \
+          | gh issue create -t "Create GitHub App" -F - -l "setup-app"
