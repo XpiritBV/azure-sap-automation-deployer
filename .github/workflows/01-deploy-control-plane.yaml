@@ -9,16 +9,10 @@ run-name: Deploy Control Plane by @${{ github.actor }}
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: "Select the environment to deploy to"
-        required: true
-        type: environment
       deployer:
         description: "Select the deployer you created"
         required: true
-        type: choice
-        options:
-          - ACC-NOEU-ORDER66-INFRASTRUCTURE
+        type: environment
       library:
         default: MGMT-NOEU-SAP_LIBRARY
         description: "Select the SAP Library to deploy"
