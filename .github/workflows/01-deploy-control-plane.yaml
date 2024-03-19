@@ -124,6 +124,7 @@ jobs:
           libraryconfig: ${{ inputs.library }}.tfvars
           libraryfolder: ${{ inputs.library }}
           use_webapp: ${{ inputs.use_webapp }}
+
   web_app_deployment:
     if: ${{ inputs.use_webapp }}
     name: Deploy SAP configuration Web App
@@ -135,46 +136,70 @@ jobs:
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Azure Login
-        uses: Azure/Login@v1
+        uses: Azure/Login@v2
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
-      - uses: flcdrg/get-azure-app-configuration-action@v2
+
+      - uses: flcdrg/get-azure-app-configuration-action@v4
         id: get-app-configuration
         with:
           resourceGroup: ${{ vars.APP_CONFIGURATION_RESOURCE_GROUP }}
           appConfigurationName: ${{ vars.APP_CONFIGURATION_NAME }}
           labelFilter: ${{ inputs.deployer }}
+
       - name: Build the Configuration Web Application
         run: dotnet build Webapp/SDAF/*.csproj
+
       - name: Publish the Configuration Web Application
         run: |
           dotnet publish Webapp/**/*.csproj \
             --configuration Release \
             --nologo \
             --output WebApp
+
       - name: Deploy the Configuration Web Application
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.webapp_url_base }}
           package: WebApp
-          #publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-      # - uses: azure/appservice-settings@v1
-      #   with:
-      #     app-name: "my-app"
-      #     slot-name: "staging" # Optional and needed only if the settings have to be configured on the specific deployment slot
-      #     app-settings-json: "${{ secrets.APP_SETTINGS }}"
-      # appSettings: '-CollectionUri $(System.CollectionUri)
-      #                 -ProjectName "$(System.TeamProject)"
-      #                 -RepositoryId $(Build.Repository.ID)
-      #                 -SourceBranch "$(Build.SourceBranchName)"
-      #                 -WORKLOADZONE_PIPELINE_ID $(WORKLOADZONE_PIPELINE_ID)
-      #                 -SYSTEM_PIPELINE_ID $(SYSTEM_PIPELINE_ID)
-      #                 -SAP_INSTALL_PIPELINE_ID $(SAP_INSTALL_PIPELINE_ID)
-      #                 -SDAF_GENERAL_GROUP_ID $(SDAF_GENERAL_GROUP_ID)
-      #                 -IS_PIPELINE_DEPLOYMENT true
-      #                 -CONTROLPLANE_ENV $(ControlPlaneEnvironment)
-      #                 -CONTROLPLANE_LOC $(ControlPlaneLocation)'
+
+      - uses: azure/appservice-settings@v1
+        with:
+          app-name: ${{ env.webapp_url_base }}
+          mask-inputs: false
+          app-settings-json: |
+            [
+             {
+                 "name": "CONTROLPLANE_ENV",
+                 "value": "${{ env.ControlPlaneEnvironment }}",
+                 "slotSetting": false
+             },
+             {
+                 "name": "CONTROLPLANE_LOC",
+                 "value": "${{ env.ControlPlaneLocation }}",
+                 "slotSetting": false
+             },
+             {
+                 "name": "IS_PIPELINE_DEPLOYMENT",
+                 "value": "true",
+                 "slotSetting": false
+             },
+             {
+                 "name": "RepositoryId",
+                 "value": "${{ github.repository }}",
+                 "slotSetting": false
+             },
+             {
+                 "name": "SourceBranch",
+                 "value": "${{ github.ref }}",
+                 "slotSetting": false
+             }
+            ]
+
       - name: Configure Web Application Authentication
         run: |
           echo "Configure the Web Application authentication using the following script." >> "Web Application Configuration.md"
@@ -192,19 +217,20 @@ jobs:
           echo "az webapp restart \\" >> "Web Application Configuration.md"
           echo "  --resource-group ${{ env.resourcegroup_name }} \\" >> "Web Application Configuration.md"
           echo "   --name ${{ env.webapp_url_base }}" >> "Web Application Configuration.md"
-          echo "" >> "Web Application Configuration.md"
           echo "\`\`\`" >> "Web Application Configuration.md"
           echo "[Access the Web App](https://${{ env.webapp_url_base }}.azurewebsites.net)" >> "Web Application Configuration.md"
           echo "" >> "Web Application Configuration.md"
-          cat "Web Application Configuration.md" > $GITHUB_STEP_SUMMARY
+          echo "Configure the Web Application authentication using the script in the artifacts or issue:" >> $GITHUB_STEP_SUMMARY
+
       - uses: actions/upload-artifact@v4
         with:
           name: "web-application-configuration-${{ github.run_number }}-${{ github.run_attempt }}"
           path: "Web Application Configuration.md"
+
       - name: Create GitHub issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           gh label create setup-webapp -c 00FF00 -d "Label for issues related to the setup of the configuration web application" --force
-          gh issue create -t "Configure the Web Application authentication" -F "Web Application Configuration.md" -l "setup-webapp"
+          gh issue create -t "Configure the Web Application authentication" -F "Web Application Configuration.md" -l "setup-webapp" > $GITHUB_STEP_SUMMARY
