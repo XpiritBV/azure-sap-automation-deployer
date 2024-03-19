@@ -8,7 +8,7 @@ This app needs the following repository permissions only for **this** repository
   - Variables: Read & Write (Used to store variables in the first step, as there's no App configuration yet)
   - Workflows: Read & Write (Creating configuration files, and update workflow with deployer and library)
 
-1. You can use the following link to create the app requirements automagically: https://github.com/settings/apps/new?name=@@OWNER@@-sap-on-azure&description=Used%20to%20create%20environments,%20update%20and%20create%20secrets%20and%20variables%20for%20your%20SAP%20on%20Azure%20Setup.&callback=false&request_oauth_on_install=false&public=true&actions=read&administration=write&contents=write&environments=write&issues=write&secrets=write&actions_variables=write&workflows=write&webhook_active=false&events[]=check_run&events[]=check_suite
+1. You can use the following link to create the app requirements automagically: @@SERVER_URL@@/settings/apps/new?name=@@OWNER@@-sap-on-azure&description=Used%20to%20create%20environments,%20update%20and%20create%20secrets%20and%20variables%20for%20your%20SAP%20on%20Azure%20Setup.&callback=false&request_oauth_on_install=false&public=true&actions=read&administration=write&contents=write&environments=write&issues=write&secrets=write&actions_variables=write&workflows=write&webhook_active=false&url=@@REPO@@
 
 2. Generate a private key
   - Click on `Generate a private key`

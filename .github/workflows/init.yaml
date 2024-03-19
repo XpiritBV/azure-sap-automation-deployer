@@ -28,4 +28,5 @@ jobs:
           cat .github/workflows/templates/init.tpl \
           | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" \
           | sed "s|@@OWNER@@|${owner}|g" \
+          | sed "s|@@SERVER_URL@@|${{ github.server_url }}|g" \
           | gh issue create -t "Create GitHub App" -F - -l "setup-app"
