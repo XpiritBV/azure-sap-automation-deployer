@@ -9,7 +9,7 @@ permissions:
   issues: write
 
 jobs:
-  link-azure:
+  setup-app:
     runs-on: ubuntu-latest
     if: contains(github.event.issue.labels.*.name, 'setup-app')
     steps:
@@ -27,9 +27,42 @@ jobs:
           APPLICATION_PRIVATE_KEY: ${{ secrets.APPLICATION_PRIVATE_KEY }}
           APPLICATION_ID: ${{ secrets.APPLICATION_ID }}
 
-      - name: Run the script
-        run: |
-          cat .github/workflows/link-azure.tpl | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" | \
-          gh issue create -t "Link Azure to GitHub" -F - -l link-azure
-        env:
-          GH_TOKEN: ${{ github.token }}
+  link-azure:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.labels.*.name, 'link-azure')
+    steps:
+    - name: 'Validate Azure Credentials'
+      run: |
+        #!/usr/bin/env bash
+
+        set -euo pipefail
+
+        function missing_secret {
+          azure_link_issue=$(gh issue list --json 'number' | jq '.[].number' -r | grep link-azure)
+          gh issue reopen ${azure_link_issue}
+          gh issue comment ${azure_link_issue} -m "To continue, we need to have Azure credentials set.\n\nPlease set them and try again."
+          exit 1
+        }
+
+        if [[ -z "${{ secrets.AZURE_CLIENT_ID }}" ]] \
+          || [[ -z "${{ secrets.AZURE_CLIENT_SECRET }}" ]] \
+          || [[ -z "${{ secrets.AZURE_TENANT_ID }}" ]] \
+          || [[ -z "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]]; then
+          missing_secret
+        fi
+
+        az login --service-principal \
+          --username ${{ secrets.AZURE_CLIENT_ID }} \
+          --password=${{ secrets.AZURE_CLIENT_SECRET }} \
+          --tenant ${{ secrets.AZURE_TENANT_ID }} \
+          --output none
+
+        if [ $? -ne 0 ]; then
+          missing_secret
+        fi
+
+        az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+        if [ $? -ne 0 ]; then
+          missing_secret
+        fi
