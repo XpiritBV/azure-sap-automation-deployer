@@ -20,7 +20,7 @@ jobs:
         run: |
           if [ -z "$APPLICATION_PRIVATE_KEY" ] || [ -z "$APPLICATION_ID"] ;  then
             gh issue reopen ${{ github.event.issue.number }}
-            gh issue comment ${{ github.event.issue.number }} -m "To continue, we need to have both secrets names `APPLICATION_PRIVATE_KEY` or `APPLICATION_ID` to be set.\n\nPlease set them and try again."
+            gh issue comment ${{ github.event.issue.number }} --body "To continue, we need to have both secrets names `APPLICATION_PRIVATE_KEY` or `APPLICATION_ID` to be set.\n\nPlease set them and try again."
             exit 1
           fi
         env:
@@ -41,7 +41,7 @@ jobs:
         function missing_secret {
           azure_link_issue=$(gh issue list --json 'number' | jq '.[].number' -r | grep link-azure)
           gh issue reopen ${azure_link_issue}
-          gh issue comment ${azure_link_issue} -m "To continue, we need to have Azure credentials set.\n\nPlease set them and try again."
+          gh issue comment ${azure_link_issue} --body "To continue, we need to have Azure credentials set.\n\nPlease set them and try again."
           exit 1
         }
 
