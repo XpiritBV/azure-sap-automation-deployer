@@ -58,10 +58,10 @@ jobs:
           region_map=$(echo var.region_mapping.${region} | terraform console | tr -d '"')
           popd
 
-          region_display_name=$(az account list-locations -o json| jq --arg REGION $region '.[] | select(.name==$REGION) | .displayName' -r)
+          # region_display_name=$(az account list-locations -o json| jq --arg REGION $region '.[] | select(.name==$REGION) | .displayName' -r)
 
           echo region_map: $region_map
-          echo region_display_name: $region_display_name
+          echo region: $region
 
           deployer_name=${environment}-${region_map}-${deployer_vnet}-INFRASTRUCTURE
           library_name=${environment}-${region_map}-SAP_LIBRARY
@@ -81,7 +81,7 @@ jobs:
             | sed "s|@@ENV@@|${environment}|g" \
             | sed "s|@@REGION@@|${region}|g" \
             | sed "s|@@VNET@@|${deployer_vnet}|g" \
-            | sed "s|@@REGION_DISPLAY_NAME@@|${region_display_name}|g" \
+            | sed "s|@@REGION_DISPLAY_NAME@@|${region}|g" \
             > ${GITHUB_WORKSPACE}/WORKSPACES/DEPLOYER/${deployer_name^^}/${deployer_name^^}.tfvars
 
           cat .cfg_template/library.tfvars \
@@ -106,3 +106,5 @@ jobs:
 
           gh issue close ${{ github.event.issue.number }}
           gh issue comment ${{ github.event.issue.number }} -m "Environment created. The only thing left is add the information required to connect to Azure.\n\nI created a [new issue for you to fill in the required information](${new_issue})."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
