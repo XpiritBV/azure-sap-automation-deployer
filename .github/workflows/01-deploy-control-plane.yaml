@@ -18,7 +18,7 @@ on:
         description: "Select the SAP Library to deploy"
         type: choice
         options:
-          - ACC-NOEU-SAP_LIBRARY
+          - DEV-WEEU-SAP_LIBRARY
       use_webapp:
         default: true
         description: Deploy the configuration web application infrastructure
@@ -157,7 +157,6 @@ jobs:
             --configuration Release \
             --nologo \
             --output WebApp
-
       - name: Deploy the Configuration Web Application
         uses: azure/webapps-deploy@v3
         with:
