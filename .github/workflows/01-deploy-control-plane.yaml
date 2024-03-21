@@ -23,10 +23,6 @@ on:
         default: true
         description: Deploy the configuration web application infrastructure
         type: boolean
-      # deploy_webapp_software:
-      #   default: true
-      #   description: "Deploy the configuration web application software"
-      #   type: boolean
       force_reset:
         default: false
         description: Force a re-install - may require multiple re-runs
@@ -61,7 +57,6 @@ jobs:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
       - name: Setup deployer
         run: |
-          echo '${{ toJSON(github) }}' > /tmp/github_context.json
           cd ${SAP_AUTOMATION_REPO_PATH}
           deploy/automation/01-deploy-control-plane/01-setup-deployer.sh
         env:
@@ -110,7 +105,6 @@ jobs:
           labelFilter: ${{ inputs.deployer }}
       - name: Deploy control plane
         run: |
-          echo '${{ toJSON(github) }}' > /tmp/github_context.json
           cd ${SAP_AUTOMATION_REPO_PATH}
           deploy/automation/01-deploy-control-plane/02-deploy-control-plane.sh
         env:
