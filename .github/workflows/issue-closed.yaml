@@ -37,7 +37,7 @@ jobs:
           organization: ${{ github.repository_owner }}
 
       - name: Check if app token is set
-        if: failed()
+        if: failure()
         run: |
             gh issue reopen ${{ github.event.issue.number }}
             gh issue comment ${{ github.event.issue.number }} --body "Failed to generate app token. See output of workflow run for details."
