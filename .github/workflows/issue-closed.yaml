@@ -1,4 +1,4 @@
-name: 'When issue closed'
+name: When issue closed
 
 on:
   issues:
@@ -39,9 +39,10 @@ jobs:
       - name: Check if app token is set
         if: failure()
         run: |
-            gh issue reopen ${{ github.event.issue.number }}
-            gh issue comment ${{ github.event.issue.number }} --body "Failed to generate app token. See output of workflow run for details."
-            exit 1
+          GITHUB_WORKFLOW_URL=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          gh issue reopen ${{ github.event.issue.number }}
+          gh issue comment ${{ github.event.issue.number }} --body "Failed to generate app token. See output of [workflow run]($GITHUB_WORKFLOW_URL) for details."
+          exit 1
         env:
           GH_TOKEN: ${{ github.token }}
           
