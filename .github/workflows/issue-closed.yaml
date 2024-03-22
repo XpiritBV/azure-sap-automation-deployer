@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     if: contains(github.event.issue.labels.*.name, 'link-azure')
     steps:
-    - name: 'Validate Azure Credentials'
+    - name: Validate Azure Credentials
       run: |
         #!/usr/bin/env bash
 
