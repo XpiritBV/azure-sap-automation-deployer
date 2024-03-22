@@ -3,7 +3,7 @@ on:
     branches:
       - main
     paths:
-      - 'WORKSPACES/*'
+      - 'WORKSPACES/LIBRARY/*'
 
 jobs:
   update-config:
