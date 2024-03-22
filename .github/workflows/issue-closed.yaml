@@ -16,7 +16,7 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v4
 
-      - name: "Check if secrets are set"
+      - name: Check if secrets are set
         run: |
           if [ -z "$APPLICATION_PRIVATE_KEY" ] || [ -z "$APPLICATION_ID"] ;  then
             gh issue reopen ${{ github.event.issue.number }}
@@ -27,7 +27,24 @@ jobs:
           APPLICATION_PRIVATE_KEY: ${{ secrets.APPLICATION_PRIVATE_KEY }}
           APPLICATION_ID: ${{ secrets.APPLICATION_ID }}
           GH_TOKEN: ${{ github.token }}
+          
+      - name: Get app token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ secrets.APPLICATION_ID }}
+          application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
+          organization: ${{ github.repository_owner }}
 
+      - name: Check if app token is set
+        if: failed()
+        run: |
+            gh issue reopen ${{ github.event.issue.number }}
+            gh issue comment ${{ github.event.issue.number }} --body "Failed to generate app token. See output of workflow run for details."
+            exit 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          
   link-azure:
     runs-on: ubuntu-latest
     if: contains(github.event.issue.labels.*.name, 'link-azure')
