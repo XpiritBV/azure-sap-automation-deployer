@@ -29,4 +29,4 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "sap-automation-deployer@noreply.github.com"
-          ${GITHUB_WORKSPACE}/.github/workflows/scripts/update-workflow-on-workspaces-changes.sh
+          .github/workflows/scripts/update-workflow-on-workspaces-changes.sh
