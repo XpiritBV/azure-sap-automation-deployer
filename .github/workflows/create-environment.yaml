@@ -94,9 +94,12 @@ jobs:
           yq -i '.jobs.link-azure.environment = "'${deployer_name^^}'"' .github/workflows/issue-closed.yaml
 
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
-          git add ${GITHUB_WORKSPACE}/WORKSPACES
           git config --global user.name "GitHub Actions"
           git config --global user.email "sap-automation-deployer@noreply.github.com"
+          
+          git add ${GITHUB_WORKSPACE}/WORKSPACES
+          git add ${GITHUB_WORKSPACE}/.github/workflows/issue-closed.yaml
+  
           git commit -m "Add configuration for ${environment} in ${region}"
           git push
 
