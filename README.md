@@ -76,7 +76,7 @@ The deployment uses the configuration defined in the Terraform variable files lo
 2. Select the `Deploy Control Plane` workflow.
 3. Click the `Run workflow` button and select the configuration name for the deployer and the SAP library.
 
-![Run Workflow - Deploy Control Plane](RunWorkflowDeployControlPlane.png)
+![Run Workflow - Deploy Control Plane](docs/RunWorkflowDeployControlPlane.png)
 
 You can track the progress in the `Actions` tab. After the deployment is finished, you can see the control plane details on the summary output.
 
