@@ -40,14 +40,10 @@ jobs:
           label_marker_start: '​' # U+200B - Zero Width Space; to make sure the UI stays clean
           label_marker_end: '​' # U+200B
 
-      - name: 'Create GitHub Environment'
+      - name: Create GitHub Environment
         env:
           GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: |
-          #!/usr/bin/env bash
-
-          set -euo pipefail
-
           json_input='${{ steps.parse.outputs.payload }}'
 
           environment=$(echo ${json_input} | jq -r '."Environment"')
@@ -57,8 +53,6 @@ jobs:
           pushd /source/deploy/terraform/terraform-units/modules/sap_namegenerator
           region_map=$(echo var.region_mapping.${region} | terraform console | tr -d '"')
           popd
-
-          # region_display_name=$(az account list-locations -o json| jq --arg REGION $region '.[] | select(.name==$REGION) | .displayName' -r)
 
           echo region_map: $region_map
           echo region: $region
@@ -74,20 +68,20 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             ${url_to_call})
 
-          mkdir -p ${GITHUB_WORKSPACE}/WORKSPACES/DEPLOYER/${deployer_name^^}
-          mkdir -p ${GITHUB_WORKSPACE}/WORKSPACES/LIBRARY/${library_name^^}
+          mkdir -p WORKSPACES/DEPLOYER/${deployer_name^^}
+          mkdir -p WORKSPACES/LIBRARY/${library_name^^}
 
           cat .cfg_template/deployer.tfvars \
             | sed "s|@@ENV@@|${environment}|g" \
             | sed "s|@@REGION@@|${region}|g" \
             | sed "s|@@VNET@@|${deployer_vnet}|g" \
             | sed "s|@@REGION_DISPLAY_NAME@@|${region}|g" \
-            > ${GITHUB_WORKSPACE}/WORKSPACES/DEPLOYER/${deployer_name^^}/${deployer_name^^}.tfvars
+            > WORKSPACES/DEPLOYER/${deployer_name^^}/${deployer_name^^}.tfvars
 
           cat .cfg_template/library.tfvars \
             | sed "s|@@ENV@@|${environment}|g" \
             | sed "s|@@REGION@@|${region}|g" \
-            > ${GITHUB_WORKSPACE}/WORKSPACES/LIBRARY/${library_name^^}/${library_name^^}.tfvars
+            > WORKSPACES/LIBRARY/${library_name^^}/${library_name^^}.tfvars
 
           # Update the environment in the issue-closed workflow
           workspace=$(ls ${GITHUB_WORKSPACE}/WORKSPACES|tail -n 1)
@@ -97,21 +91,21 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "sap-automation-deployer@noreply.github.com"
           
-          git add ${GITHUB_WORKSPACE}/WORKSPACES
-          git add ${GITHUB_WORKSPACE}/.github/workflows/issue-closed.yaml
-  
+          git add WORKSPACES
+          git add .github/workflows/issue-closed.yaml
+          
           git commit -m "Add configuration for ${environment} in ${region}"
           git push
 
           # Now update the deployment workflow with the deployer and library
-          ${GITHUB_WORKSPACE}/.github/workflows/scripts/update-workflow-on-workspaces-changes.sh
+          .github/workflows/scripts/update-workflow-on-workspaces-changes.sh
 
-      - name: 'Close issue'
+      - name: Close issue
         run: |
           new_issue=$(cat .github/workflows/templates/link-azure.tpl | sed "s|@@REPO@@|${{ github.server_url }}/${{ github.repository }}|g" | \
           gh issue create -t "Link Azure to GitHub" -F - -l link-azure)
 
           gh issue close ${{ github.event.issue.number }}
-          gh issue comment ${{ github.event.issue.number }} --body "Environment created. The only thing left is add the information required to connect to Azure.\n\nI created a [new issue for you to fill in the required information](${new_issue})."
+          gh issue comment ${{ github.event.issue.number }} --body "Environment created. The only thing left is add the information required to connect to Azure. I created a [new issue for you to fill in the required information](${new_issue})."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
