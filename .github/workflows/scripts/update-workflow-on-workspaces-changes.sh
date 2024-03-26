@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
- # Remove the current values
+# Remove the current values
 yq -i 'del(.on.workflow_dispatch.inputs.library.options)' .github/workflows/01-deploy-control-plane.yaml
 
 # Add the new values
