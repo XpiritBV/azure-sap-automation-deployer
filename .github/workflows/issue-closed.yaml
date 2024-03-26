@@ -56,10 +56,6 @@ jobs:
 
       - name: Validate Azure Credentials
         run: |
-          #!/usr/bin/env bash
-  
-          set -euo pipefail
-  
           function missing_secret {
             gh issue reopen ${{ github.event.issue.number }}
             gh issue comment ${{ github.event.issue.number }} --body "To continue, we need to have Azure credentials set. Please set them and try again."
