@@ -141,11 +141,6 @@ jobs:
     container:
       image: ghcr.io/xpiritbv/azure-sap-automation:github-workflow
     steps:
-      - name: Checkout the code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Azure Login
         uses: Azure/Login@v2
         with:
@@ -159,11 +154,11 @@ jobs:
           labelFilter: ${{ inputs.deployer }}
 
       - name: Build the Configuration Web Application
-        run: dotnet build Webapp/SDAF/*.csproj
+        run: dotnet build ${SAP_AUTOMATION_REPO_PATH}/Webapp/SDAF/*.csproj
 
       - name: Publish the Configuration Web Application
         run: |
-          dotnet publish Webapp/**/*.csproj \
+          dotnet publish ${SAP_AUTOMATION_REPO_PATH}/Webapp/**/*.csproj \
             --configuration Release \
             --nologo \
             --output WebApp

@@ -1,0 +1,35 @@
+# /*---------------------------------------------------------------------------8
+# |                                                                            |
+# |     This workflows checks config line endings with GitHub Actions          |
+# |                                                                            |
+# +------------------------------------4--------------------------------------*/
+
+name: Check Config Files line endings
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - WORKSPACES
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-config-files:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Ensure linux line-endings
+      run: |
+        git add --renormalize .
+        if git diff --exit-code; then
+          echo "No changes needed"
+        else
+          echo "::error::Some files have inconsistent line endings. Please fix them and commit the changes."
+          echo "::error::e.g. `git update-index --chmod=+x $script` for all files below"
+          git diff --name-only
+          exit 1
+        fi
